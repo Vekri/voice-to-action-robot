@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+*.egg-info/
+.pytest_cache/
+.vercel/
+*.mp4
+Music_file.mp3
+.vercel

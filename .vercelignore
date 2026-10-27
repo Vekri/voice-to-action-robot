@@ -1,0 +1,6 @@
+*.mp4
+Music_file.mp3
+__pycache__/
+.pytest_cache/
+.venv/
+.env

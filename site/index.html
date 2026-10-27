@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Raja — Don't Ask AI. Assign the Task.</title>
+  <meta name="description" content="Raja is a voice-to-action robot. Speak or type a task. An agent calls a Python tool, and Raja does the work." />
+  <link rel="icon" href="raja.png" />
+  <style>
+    :root {
+      --bg: #060a12;
+      --card: #0e1622;
+      --line: #243044;
+      --ink: #f0f4fa;
+      --muted: #8c9ab0;
+      --cyan: #00e6ff;
+      --gold: #ffcc33;
+      --magenta: #ff2bd6;
+      --lime: #39ff50;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(900px 420px at 15% -10%, rgba(0, 230, 255, 0.08), transparent 60%),
+        radial-gradient(700px 380px at 90% 0%, rgba(255, 43, 214, 0.06), transparent 55%),
+        var(--bg);
+      color: var(--ink);
+      font: 17px/1.55 "Segoe UI", system-ui, sans-serif;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    header, main, footer { width: min(1080px, calc(100% - 32px)); margin: 0 auto; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 0 8px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { width: 46px; height: 46px; border-radius: 12px; }
+    .brand strong { display: block; letter-spacing: 0.14em; font-size: 14px; }
+    .brand span { color: var(--gold); font-size: 13px; }
+    nav { display: flex; gap: 18px; font-size: 14px; color: var(--muted); }
+    nav a { color: var(--muted); }
+    .hero { padding: 48px 0 20px; }
+    .kicker {
+      color: var(--cyan);
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 10px 0 12px;
+      font-size: clamp(40px, 6vw, 68px);
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+      max-width: 14ch;
+    }
+    .lede { max-width: 62ch; color: #d5deea; font-size: 19px; }
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 22px 0 8px;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 13px;
+    }
+    .pipeline span {
+      border: 1px solid var(--line);
+      background: #0b121c;
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+    .actions { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+    .btn {
+      display: inline-block;
+      background: var(--cyan);
+      color: #041018;
+      font-weight: 700;
+      padding: 10px 16px;
+      border-radius: 10px;
+      text-decoration: none;
+    }
+    .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+    .btn:hover { text-decoration: none; filter: brightness(1.05); }
+    section { margin: 42px 0; }
+    h2 { font-size: 28px; letter-spacing: -0.02em; margin: 0 0 14px; }
+    .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 18px 8px;
+    }
+    .card h3 { margin: 0 0 6px; font-size: 16px; }
+    .card p, .card li { color: #c9d3e2; }
+    ul { margin: 0 0 12px; padding-left: 18px; }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi {
+      background: #0b121c;
+      border-left: 3px solid var(--cyan);
+      padding: 14px;
+      border-radius: 12px;
+    }
+    .kpi b { display: block; color: var(--cyan); font-size: 26px; letter-spacing: -0.03em; }
+    .kpi span { color: var(--muted); font-size: 13px; }
+    .chapters { display: grid; grid-template-columns: 88px 1fr; gap: 6px 14px; }
+    .chapters time { color: var(--gold); font-family: Consolas, monospace; }
+    pre {
+      white-space: pre-wrap;
+      background: #070d16;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      color: #d7e0ee;
+      font: 14px/1.5 Consolas, "Cascadia Mono", monospace;
+    }
+    .copyrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    button.copy {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    footer { color: var(--muted); padding: 10px 0 40px; font-size: 14px; }
+    @media (max-width: 800px) {
+      .grid, .kpis { grid-template-columns: 1fr 1fr; }
+      nav { display: none; }
+    }
+    @media (max-width: 560px) {
+      .kpis { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="raja.png" alt="Raja" />
+      <div>
+        <strong>RAJA</strong>
+        <span>Don't Ask AI. Assign the Task.</span>
+      </div>
+    </div>
+    <nav>
+      <a href="#built">How it was built</a>
+      <a href="#video">YouTube</a>
+      <a href="https://github.com/Vekri/voice-to-action-robot">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="kicker">Voice-to-action robot</div>
+      <h1>Don't just talk to AI. Give AI the ability to act.</h1>
+      <p class="lede">Speak or type in plain English. Raja understands the request, calls a Python tool, and does the work — load the sales file, draw the chart, speak the takeaway, or move — then tells you what he did.</p>
+      <div class="pipeline">
+        <span>Voice</span><span>→</span><span>AI Agent</span><span>→</span><span>Python tools</span><span>→</span><span>Robot action</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://github.com/Vekri/voice-to-action-robot">Source on GitHub</a>
+        <a class="btn ghost" href="#video">Title and description</a>
+      </div>
+    </section>
+
+    <section>
+      <h2>What the demo shows</h2>
+      <div class="kpis">
+        <div class="kpi"><b>142.9%</b><span>Revenue growth, Jan to Dec</span></div>
+        <div class="kpi"><b>116.7%</b><span>Orders growth, 180 to 390</span></div>
+        <div class="kpi"><b>112.5%</b><span>Customers growth, 96 to 204</span></div>
+        <div class="kpi"><b>$837</b><span>Twelve-month revenue. Peak Dec $102</span></div>
+      </div>
+    </section>
+
+    <section class="grid" id="built">
+      <div class="card">
+        <h3>How it was created</h3>
+        <p>Raja is a Python desktop app drawn with pygame. The window is a dark stage and a live panel for voice, intent, tool, and status. The body is a jointed figure posed at 60 frames a second.</p>
+        <p>A microphone thread and the Ask box share one command path. Windows text-to-speech speaks the reply. While Raja is talking, the mic ignores him.</p>
+        <p>The agent maps the sentence to tools. An OpenAI key can plan the steps. Without one, a local matcher still routes the command. Charts and KPIs are computed from <code>data/retail_sales.csv</code> and drawn in the window. The five-second jam is written in code as tones, not a recorded song.</p>
+      </div>
+      <div class="card">
+        <h3>Tools</h3>
+        <ul>
+          <li>Talk, thanks, what he can do</li>
+          <li>Load the retail sales file</li>
+          <li>Bar, line, pie, area, donut, table</li>
+          <li>Spoken insight from the numbers</li>
+          <li>Walk, run, jump, wave, dance</li>
+          <li>Play the original jam</li>
+        </ul>
+        <p>Run it locally with <code>python main.py</code>. This page is the public home. pygame does not run on Vercel.</p>
+      </div>
+    </section>
+
+    <section id="video">
+      <div class="copyrow">
+        <h2>YouTube long video</h2>
+      </div>
+      <p style="color:#c9d3e2">Paste this onto the 2:16 recording. The file is <code>Robo Video5 fin.mp4</code>.</p>
+      <div class="copyrow">
+        <h3>Title</h3>
+        <button class="copy" type="button" data-copy="title">Copy title</button>
+      </div>
+      <pre id="title">Raja | Don't Ask AI. Assign the Task | Voice-to-Action AI Agent</pre>
+      <div class="chapters">
+        <time>0:00</time><span>Meet Raja</span>
+        <time>0:24</time><span>Load retail sales and read the table</span>
+        <time>0:40</time><span>Revenue bar chart</span>
+        <time>0:56</time><span>Orders line chart</span>
+        <time>1:12</time><span>Revenue pie chart</span>
+        <time>1:36</time><span>Revenue area chart</span>
+        <time>1:52</time><span>Play a short original jam and dance</span>
+        <time>2:08</time><span>Thank you</span>
+      </div>
+      <div class="copyrow" style="margin-top:22px">
+        <h3>Description</h3>
+        <button class="copy" type="button" data-copy="desc">Copy description</button>
+      </div>
+      <pre id="desc">Don't just talk to AI. Give AI the ability to act.
+
+Raja is a voice-to-action robot. You speak or type in plain English. An agent understands the request, calls a Python tool, and Raja does the work on screen — then tells you what he did out loud.
+
+This recording is the desktop app running live. The robot, the charts, and the voice are the program. Nothing in the picture was added in an editor.
+
+What you will see
+0:00 Meet Raja
+0:24 Load retail sales and read the table
+0:40 Revenue bar chart
+0:56 Orders line chart
+1:12 Revenue pie chart
+1:36 Revenue area chart
+1:52 Play a short original jam and dance
+2:08 Thank you
+
+The briefing on screen
+Revenue grew 142.9% from January ($42) to December ($102).
+Orders grew 116.7%, from 180 to 390.
+Customers grew 112.5%, from 96 to 204.
+Twelve-month total revenue is $837. Average month is $69.8. Peak month is December.
+
+How Raja was created
+Raja is a Python desktop app drawn with pygame. It is a simulator you can watch, not a physical robot and not a chatbot that only writes text.
+
+The window is a dark stage plus a live panel: voice, intent, tool, status, and the task list. The body is a jointed figure posed every frame at 60 fps.
+
+A background thread listens on the microphone. Typed text uses the same path. Replies use Windows text-to-speech. While Raja is speaking, the microphone ignores him so he does not answer his own voice.
+
+The agent strips filler such as "please" and "can you", then maps the sentence to tools. If an OpenAI key is set, a small model can return the tool list. If it is not set, a local matcher still routes the sentence. One sentence can become several steps. If nothing matches a tool, Raja answers in conversation.
+
+Each match becomes an action on a queue:
+• Talk — greetings, thanks, what he can do
+• Load — reads data/retail_sales.csv (12 months of revenue, orders, and customers)
+• Visualize — bar, line, pie, area, donut, or table
+• Insights — growth, average, peak, and a short spoken brief
+• Move — walk, run, jump, wave, sit, stand, turn, dance, stop
+• Music — a five-second jam written as tones in code, while the body dances
+
+Charts and KPIs are computed in Python and drawn in the window. Groq, Gemini, or Ollama can phrase an insight when a key is present. This demo does not need them.
+
+Code
+https://github.com/Vekri/voice-to-action-robot
+
+Project page
+https://voice-to-action-robot.vercel.app
+
+Stack
+Python 3 · pygame · SpeechRecognition · PyAudio · pyttsx3 · numpy
+Optional: OpenAI, Groq, Gemini, Ollama
+
+Voice → AI Agent → Python tools → robot action
+
+#AIAgent #AgenticAI #VoiceAI #Python #DataVisualization</pre>
+    </section>
+  </main>
+  <footer>
+    Raja · voice-to-action robot · <a href="https://github.com/Vekri/voice-to-action-robot">github.com/Vekri/voice-to-action-robot</a>
+  </footer>
+  <script>
+    document.querySelectorAll("button.copy").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const el = document.getElementById(btn.dataset.copy);
+        await navigator.clipboard.writeText(el.textContent.trim());
+        const old = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(() => { btn.textContent = old; }, 1200);
+      });
+    });
+  </script>
+</body>
+</html>
