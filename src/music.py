@@ -4,18 +4,21 @@ from __future__ import annotations
 
 import math
 import struct
+import sys
 import wave
 from pathlib import Path
 
 import pygame
 
 ROOT = Path(__file__).resolve().parent.parent
-CLIP = ROOT / "data" / "raja_jam.wav"
+CLIP = ROOT / "data" / ("raja_jam.ogg" if sys.platform == "emscripten" else "raja_jam.wav")
 DURATION = 5.0
 RATE = 44100
 
 
 def ensure_clip() -> Path:
+    if sys.platform == "emscripten":
+        return CLIP
     CLIP.parent.mkdir(exist_ok=True)
     if CLIP.is_file() and CLIP.stat().st_size > 1000:
         return CLIP

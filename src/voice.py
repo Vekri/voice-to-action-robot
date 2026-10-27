@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 import queue
+import sys
 import tempfile
 import threading
 import time
 from typing import Optional
 
 from . import config as C
+
+WEB = sys.platform == "emscripten"
 
 
 class VoiceIO:
@@ -30,9 +34,15 @@ class VoiceIO:
         self._last_spoken = ""
         self._last_queued = ""
         self.deaf_until = 0.0
+        self._speak_until = 0.0
+
+        if WEB:
+            self.error = "Type in the Ask box"
+            self.available = False
+            return
 
         try:
-            import speech_recognition as sr
+            sr = importlib.import_module("speech_recognition")
 
             self._sr = sr
             self._recognizer = sr.Recognizer()
@@ -51,6 +61,8 @@ class VoiceIO:
         self._speak_thread = threading.Thread(target=self._speak_loop, daemon=True)
 
     def start(self) -> None:
+        if WEB:
+            return
         self._stop.clear()
         if not self._listen_thread.is_alive():
             self._listen_thread = threading.Thread(target=self._listen_loop, daemon=True)
@@ -61,6 +73,11 @@ class VoiceIO:
 
     def shutdown(self) -> None:
         self._stop.set()
+
+    def poll(self) -> None:
+        if self._speak_until and time.time() >= self._speak_until:
+            self.speaking = False
+            self._speak_until = 0.0
 
     @property
     def busy(self) -> bool:
@@ -73,6 +90,13 @@ class VoiceIO:
         if line == self._last_queued:
             return
         self._last_queued = line
+        if WEB:
+            _speak_browser(line)
+            self.speaking = True
+            self.tts_available = True
+            self._last_spoken = line
+            self._speak_until = time.time() + min(12.0, max(1.4, 0.06 * len(line)))
+            return
         self._speak_q.put(line)
 
     def push_text(self, text: str) -> None:
@@ -136,11 +160,20 @@ class VoiceIO:
 
     def _co_init(self) -> None:
         try:
-            import pythoncom
-
+            pythoncom = importlib.import_module("pythoncom")
             pythoncom.CoInitialize()
         except Exception:
             pass
+
+
+def _speak_browser(text: str) -> None:
+    try:
+        window = importlib.import_module("platform").window
+        utter = window.SpeechSynthesisUtterance.new(text)
+        window.speechSynthesis.cancel()
+        window.speechSynthesis.speak(utter)
+    except Exception:
+        pass
 
 
 def _speak_text(text: str) -> bool:
@@ -154,12 +187,12 @@ def _speak_text(text: str) -> bool:
 
 
 def _speak_win32(text: str) -> bool:
-    import pythoncom
-    import win32com.client
+    pythoncom = importlib.import_module("pythoncom")
+    win32 = importlib.import_module("win32com.client")
 
     pythoncom.CoInitialize()
     try:
-        voice = win32com.client.Dispatch("SAPI.SpVoice")
+        voice = win32.Dispatch("SAPI.SpVoice")
         voice.Speak(str(text))
         return True
     finally:
@@ -170,11 +203,10 @@ def _speak_win32(text: str) -> bool:
 
 
 def _speak_pyttsx3(text: str) -> bool:
-    import pyttsx3
+    pyttsx3 = importlib.import_module("pyttsx3")
 
     try:
-        import pythoncom
-
+        pythoncom = importlib.import_module("pythoncom")
         pythoncom.CoInitialize()
     except Exception:
         pass
@@ -191,8 +223,8 @@ def _speak_pyttsx3(text: str) -> bool:
 
 
 def _speak_wav(text: str) -> bool:
-    import subprocess
-    import winsound
+    subprocess = importlib.import_module("subprocess")
+    winsound = importlib.import_module("winsound")
 
     path = os.path.join(tempfile.gettempdir(), "raja_tts.wav")
     safe = text.replace("'", "''")
@@ -217,7 +249,7 @@ def _speak_wav(text: str) -> bool:
 
 
 def _speak_powershell(text: str) -> bool:
-    import subprocess
+    subprocess = importlib.import_module("subprocess")
 
     safe = text.replace("'", "''")
     script = (

@@ -15,6 +15,8 @@ python main.py
 
 `run.bat` does the same thing. Press F12 inside the window for the scripted demo, or type in the Ask box.
 
+The same app is also in the browser at [voice-to-action-robot.vercel.app/play](https://voice-to-action-robot.vercel.app/play/). Click the page once, then type in the Ask box. The microphone and Windows voice stay on the desktop window.
+
 A microphone is optional. Typed commands use the same path as speech. An API key is optional. Without one, a local matcher still routes tools.
 
 ## What he can do

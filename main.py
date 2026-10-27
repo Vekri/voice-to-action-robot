@@ -1,8 +1,13 @@
 """Launch Raja — voice-to-action robot."""
 
+import asyncio
 import sys
 
-from src.app import main
+from src.app import App
 
-if __name__ == "__main__":
-    main(demo="--demo" in sys.argv)
+
+async def main() -> None:
+    await App(demo="--demo" in sys.argv).run()
+
+
+asyncio.run(main())

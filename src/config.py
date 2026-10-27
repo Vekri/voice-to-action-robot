@@ -50,8 +50,13 @@ def apply_size(width: int, height: int) -> None:
 
 def fit_desktop() -> tuple[int, int]:
     """Fill the monitor, leaving a thin strip for the Windows taskbar."""
+    import sys
+
     import pygame
 
+    if sys.platform == "emscripten":
+        apply_size(1280, 720)
+        return WIDTH, HEIGHT
     pygame.display.init()
     info = pygame.display.Info()
     w = max(1100, int(info.current_w) - 8)

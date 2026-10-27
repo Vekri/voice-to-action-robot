@@ -58,6 +58,9 @@ python main.py
 Project page
 https://voice-to-action-robot.vercel.app
 
+Play Raja in the browser
+https://voice-to-action-robot.vercel.app/play/
+
 Stack
 Python 3 · pygame · SpeechRecognition · PyAudio · pyttsx3 · numpy
 Optional: OpenAI, Groq, Gemini, Ollama

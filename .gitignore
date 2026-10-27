@@ -5,6 +5,7 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .vercel/
+build/
 *.mp4
 Music_file.mp3
 .vercel

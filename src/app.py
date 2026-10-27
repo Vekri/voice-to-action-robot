@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import queue
 import re
 import sys
@@ -105,8 +106,8 @@ class App:
         pygame.font.init()
         pygame.display.set_caption(C.TITLE)
         width, height = C.fit_desktop()
-        flags = pygame.RESIZABLE
-        if hasattr(pygame, "WINDOWMAXIMIZED"):
+        flags = 0 if sys.platform == "emscripten" else pygame.RESIZABLE
+        if sys.platform != "emscripten" and hasattr(pygame, "WINDOWMAXIMIZED"):
             flags |= pygame.WINDOWMAXIMIZED
         self.screen = pygame.display.set_mode((width, height), flags)
         self.icon = apply_window_icon()
@@ -153,7 +154,7 @@ class App:
         else:
             self.log.appendleft(f"VOICE   {self.voice.error or 'fallback mode'}")
 
-    def run(self) -> None:
+    async def run(self) -> None:
         self.voice.start()
         self.voice.speak(
             "Hello. I am Raja. Don't ask AI. Assign the task. "
@@ -164,8 +165,10 @@ class App:
             while self.running:
                 dt = self.clock.tick(C.FPS) / 1000.0
                 self.time += dt
+                self.voice.poll()
                 self._events()
                 self._ingest_voice()
+                await asyncio.sleep(0)
                 self._demo_tick(dt)
                 speak = self.robot.update(dt)
                 if speak:
@@ -211,7 +214,8 @@ class App:
                 self._draw()
         finally:
             self.voice.shutdown()
-            pygame.quit()
+            if sys.platform != "emscripten":
+                pygame.quit()
 
     def _events(self) -> None:
         for event in pygame.event.get():
@@ -566,5 +570,4 @@ class App:
 
 
 def main(demo: bool = False) -> None:
-    App(demo=demo).run()
-    sys.exit(0)
+    asyncio.run(App(demo=demo).run())

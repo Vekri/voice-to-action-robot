@@ -6,6 +6,7 @@ import csv
 import json
 import math
 import re
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -313,7 +314,7 @@ class DataStore:
         self.insights = speak_kpis(self.kpis())
         self.insight_source = "LOCAL ANALYST"
         self.insight = self.insights[0] if self.insights else ""
-        if use_llm:
+        if use_llm and sys.platform != "emscripten":
             import threading
 
             stats = summarize(self.numeric, self.labels, self.title, self.metric)

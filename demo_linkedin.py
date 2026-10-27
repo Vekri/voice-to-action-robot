@@ -1,7 +1,10 @@
 """Auto-run Raja for a LinkedIn screen recording."""
 
+import asyncio
+
 from src.app import App
 
 
 if __name__ == "__main__":
-    App(demo=True).run()
+    asyncio.run(App(demo=True).run())
+
