@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 import struct
 import sys
-import wave
 from pathlib import Path
 
 import pygame
@@ -27,6 +26,8 @@ def ensure_clip() -> Path:
 
 
 def _write_jam(path: Path) -> None:
+    import wave
+
     n = int(RATE * DURATION)
     frames = bytearray()
     for i in range(n):

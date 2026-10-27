@@ -63,28 +63,29 @@ def _todo_title(action) -> str:
     return action.label.title() if getattr(action, "label", "") else name.title()
 
 
+# Numeric key codes. The browser build of pygame does not expose K_1 at import time.
 HOTKEYS = {
-    pygame.K_1: "walk forward two meters",
-    pygame.K_2: "run five meters",
-    pygame.K_3: "jump twice",
-    pygame.K_4: "wave at me",
-    pygame.K_5: "sit down",
-    pygame.K_6: "stand up",
-    pygame.K_7: "dance",
-    pygame.K_8: "turn left",
-    pygame.K_9: "turn right",
-    pygame.K_0: "stop",
-    pygame.K_l: "load data",
-    pygame.K_v: "show bar chart",
-    pygame.K_p: "show pie chart",
-    pygame.K_n: "show line chart",
-    pygame.K_a: "show area chart",
-    pygame.K_d: "show donut chart",
-    pygame.K_o: "show orders bar chart",
-    pygame.K_r: "show revenue bar chart",
-    pygame.K_c: "show customers bar chart",
-    pygame.K_i: "analyze the data",
-    pygame.K_m: "play music",
+    49: "walk forward two meters",
+    50: "run five meters",
+    51: "jump twice",
+    52: "wave at me",
+    53: "sit down",
+    54: "stand up",
+    55: "dance",
+    56: "turn left",
+    57: "turn right",
+    48: "stop",
+    108: "load data",
+    118: "show bar chart",
+    112: "show pie chart",
+    110: "show line chart",
+    97: "show area chart",
+    100: "show donut chart",
+    111: "show orders bar chart",
+    114: "show revenue bar chart",
+    99: "show customers bar chart",
+    105: "analyze the data",
+    109: "play music",
 }
 
 LINKEDIN_DEMO = (
@@ -232,7 +233,7 @@ class App:
                     self.typed += event.text
             elif event.type == pygame.KEYDOWN:
                 ctrl = bool(pygame.key.get_mods() & pygame.KMOD_CTRL)
-                if event.key == pygame.K_ESCAPE:
+                if event.key == 27:
                     if self.typed:
                         self.typed = ""
                     elif self.typing:
@@ -240,20 +241,20 @@ class App:
                         pygame.key.stop_text_input()
                     else:
                         self.running = False
-                elif event.key == pygame.K_RETURN:
+                elif event.key == 13:
                     if self.typed.strip():
                         self._dispatch(self.typed)
                         self.typed = ""
                     self.typing = True
                     pygame.key.start_text_input()
-                elif event.key == pygame.K_BACKSPACE and self.typing:
+                elif event.key == 8 and self.typing:
                     self.typed = self.typed[:-1]
                 elif ctrl and event.key in HOTKEYS:
                     self._dispatch(HOTKEYS[event.key])
-                elif not self.typing and event.key == pygame.K_t:
+                elif not self.typing and event.key == 116:
                     self.typing = True
                     pygame.key.start_text_input()
-                elif event.key == pygame.K_F12:
+                elif event.key == 1073741893:
                     self._start_demo()
                 elif not self.typing and event.key in HOTKEYS:
                     self._dispatch(HOTKEYS[event.key])
