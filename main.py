@@ -1,13 +1,21 @@
 """Launch Raja — voice-to-action robot."""
 
-import asyncio
+import importlib
 import sys
 
-from src.app import App
+
+def _asyncio():
+    # The browser build is already inside an event loop. pygbag's asyncio
+    # schedules the game on that loop. Desktop Python uses the normal one.
+    if sys.platform == "emscripten":
+        return importlib.import_module("pygbag.aio")
+    return importlib.import_module("asyncio")
 
 
 async def main() -> None:
+    from src.app import App
+
     await App(demo="--demo" in sys.argv).run()
 
 
-asyncio.run(main())
+_asyncio().run(main())

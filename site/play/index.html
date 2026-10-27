@@ -204,6 +204,18 @@ function show_infobox() {
             width: 300px;
         }
 
+        #pyconsole {
+            position: fixed;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            z-index: 1000000;
+            background: #fff;
+            color: #111;
+            max-height: 32vh;
+            overflow: auto;
+            font: 14px/1.4 Consolas, monospace;
+        }
         #infobox {
             position: fixed; /* center relative to viewport */
             background: green;
@@ -301,8 +313,8 @@ function show_infobox() {
 
 
     <canvas class="emscripten" id="canvas"
-width="1px"
-height="1px"
+width="1280"
+height="720"
     oncontextmenu="event.preventDefault()" tabindex=1>
     </canvas>
 
