@@ -23,39 +23,57 @@ from pathlib import Path
 # do not rename
 async def custom_site():
     import embed
-    platform.document.body.style.background = "#7f7f7f"
 
-    platform.window.transfer.hidden = true
-    platform.window.canvas.style.visibility = "visible"
+    def say(msg):
+        print(msg)
+        try:
+            platform.window.infobox.innerText = msg
+            platform.window.infobox.style.display = "block"
+        except Exception:
+            pass
 
+    try:
+        say("Starting Raja")
+        platform.document.body.style.background = "#060a12"
+        platform.window.transfer.hidden = True
+        platform.window.canvas.style.visibility = "visible"
 
-    bundle = "raja_web"
+        bundle = "raja_web"
+        appdir = Path(f"/data/data/{bundle}")
+        appdir.mkdir()
+        say("Opening the app package")
 
-    # the C or js loader could do that but be explicit.
-    appdir = Path(f"/data/data/{bundle}") # /data/data/raja_web
-    appdir.mkdir()
-
-
-    # unpack filesystem from compressed archive into work dir
-    if platform.window.location.host.find('.itch.zone')>0:
-        import zipfile
-        async with platform.fopen("raja_web.apk", "rb") as archive:
-            with zipfile.ZipFile(archive) as zip_ref:
-                zip_ref.extractall(appdir.as_posix())
-    else:
-        import tarfile
-        async with platform.fopen("raja_web.tar.gz", "rb") as archive:
-            tar = tarfile.open(fileobj=archive, mode="r:gz")
-            tar.extractall(path=appdir.as_posix(), filter='tar')
-            tar.close()
+        if platform.window.location.host.find(".itch.zone") > 0:
+            import zipfile
+            async with platform.fopen("raja_web.apk", "rb") as archive:
+                with zipfile.ZipFile(archive) as zip_ref:
+                    zip_ref.extractall(appdir.as_posix())
+        else:
+            import tarfile
+            async with platform.fopen("raja_web.tar.gz", "rb") as archive:
+                tar = tarfile.open(fileobj=archive, mode="r:gz")
+                try:
+                    tar.extractall(path=appdir.as_posix(), filter="tar")
+                except TypeError:
+                    tar.extractall(path=appdir.as_posix())
+                tar.close()
+        say("Package ready")
+    except Exception as exc:
+        say("Raja could not start: " + repr(exc))
+        raise
 
     # preloader will change to work dir and prepend it to sys.path
     platform.run_main(PyConfig, loaderhome= appdir / "assets", loadermain=None)
 
 
     # wait preloading complete : that includes images and wasm compilation of bundled modules
+    ticks = 0
     while embed.counter()<0:
+        ticks += 1
+        if ticks % 20 == 0:
+            say("Loading runtime, " + str(ticks // 10) + "s")
         await asyncio.sleep(.1)
+    say("Click the page to start Raja")
 
     main = appdir / "assets" / "main.py"
 
@@ -233,20 +251,44 @@ function show_infobox() {
         /* average size of droid screen 470dp x 320dp  */
         canvas.emscripten {
             border: 0px none;
-            background-color: transparent;
+            background-color: #060a12;
             width: 100%;
-            height: 100%;
+            height: calc(100% - 48px);
             z-index: 5;
 
             padding: 0;
             margin: 0 auto;
 
             position: absolute;
-            top: 0;
+            top: 48px;
             bottom: 0;
             left: 0;
             right: 0;
         }
+        .apptabs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            z-index: 1000002;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 14px;
+            background: #060a12;
+            border-bottom: 1px solid #243044;
+            font: 14px "Segoe UI", sans-serif;
+        }
+        .apptabs strong { color: #ffcc33; letter-spacing: 0.12em; margin-right: 8px; }
+        .apptabs a {
+            color: #8c9ab0;
+            text-decoration: none;
+            border: 1px solid #243044;
+            border-radius: 999px;
+            padding: 4px 12px;
+        }
+        .apptabs a.on { color: #041018; background: #00e6ff; border-color: #00e6ff; font-weight: 700; }
 
         body {
             font-family: arial;
@@ -301,6 +343,11 @@ function show_infobox() {
 </head>
 
 <body>
+    <nav class="apptabs">
+        <strong>RAJA</strong>
+        <a href="/">About</a>
+        <a class="on" href="/play/">Play</a>
+    </nav>
 
     <div id="transfer" align=center>
 <!--        <div class="spinner" id='spinner'></div> -->
