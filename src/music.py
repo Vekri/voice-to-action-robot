@@ -56,16 +56,24 @@ class Jukebox:
     def __init__(self) -> None:
         self.ready = False
         self.error = ""
+        self._opened = False
+
+    def _open(self) -> bool:
+        if self._opened:
+            return self.ready
+        self._opened = True
         try:
-            pygame.mixer.init(frequency=RATE, size=-16, channels=1, buffer=1024)
+            if not pygame.mixer.get_init():
+                pygame.mixer.init(frequency=RATE, size=-16, channels=1, buffer=1024)
             ensure_clip()
             self.ready = True
         except Exception as exc:
             self.error = exc.__class__.__name__
             self.ready = False
+        return self.ready
 
     def play(self) -> bool:
-        if not self.ready:
+        if not self._open():
             return False
         try:
             pygame.mixer.music.load(str(ensure_clip()))

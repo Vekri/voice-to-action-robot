@@ -157,11 +157,15 @@ class App:
 
     async def run(self) -> None:
         self.voice.start()
-        self.voice.speak(
-            "Hello. I am Raja. Don't ask AI. Assign the task. "
-            "I load retail sales data, draw the chart, speak the insight, dance, "
-            "and answer your questions like a person."
-        )
+        if sys.platform != "emscripten":
+            self.voice.speak(
+                "Hello. I am Raja. Don't ask AI. Assign the task. "
+                "I load retail sales data, draw the chart, speak the insight, dance, "
+                "and answer your questions like a person."
+            )
+        else:
+            self.robot_text = "Type a task in the Ask box, then press Enter."
+            self.log.appendleft("VOICE   Type in the Ask box")
         try:
             while self.running:
                 dt = self.clock.tick(C.FPS) / 1000.0
@@ -222,7 +226,7 @@ class App:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            elif event.type == pygame.VIDEORESIZE:
+            elif event.type == pygame.VIDEORESIZE and sys.platform != "emscripten":
                 if event.w == C.WIDTH and event.h == C.HEIGHT:
                     continue
                 C.apply_size(event.w, event.h)
