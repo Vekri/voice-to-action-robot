@@ -394,6 +394,26 @@ frameborder="1"
         info.hidden = debug_hidden
         box.hidden =  debug_hidden
 
+        // Prime browser speech so Raja can talk after the first click/key.
+        const unlockSpeech = () => {
+            try {
+                if (!window.speechSynthesis) return;
+                window.speechSynthesis.getVoices();
+                const warm = new SpeechSynthesisUtterance(" ");
+                warm.volume = 0;
+                window.speechSynthesis.speak(warm);
+                window.speechSynthesis.cancel();
+            } catch (e) {}
+            window.removeEventListener("pointerdown", unlockSpeech);
+            window.removeEventListener("keydown", unlockSpeech);
+        };
+        window.addEventListener("pointerdown", unlockSpeech, { once: true });
+        window.addEventListener("keydown", unlockSpeech, { once: true });
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            window.speechSynthesis.getVoices();
+        }
+
         show_infobox()
     }
 

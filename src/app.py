@@ -147,6 +147,7 @@ class App:
         self._complete_pending = False
         self._last_utterance = ""
         self._last_utterance_at = -10.0
+        self._web_hello = False
         self.log.appendleft("SYSTEM  Raja online")
         self.log.appendleft("AGENT   Natural-language tools armed")
         if self.voice.available:
@@ -156,15 +157,17 @@ class App:
 
     async def run(self) -> None:
         self.voice.start()
+        hello = (
+            "Hello. I am Raja. Don't ask AI. Assign the task. "
+            "I load retail sales data, draw the chart, speak the insight, dance, "
+            "and answer your questions like a person."
+        )
         if sys.platform != "emscripten":
-            self.voice.speak(
-                "Hello. I am Raja. Don't ask AI. Assign the task. "
-                "I load retail sales data, draw the chart, speak the insight, dance, "
-                "and answer your questions like a person."
-            )
+            self.voice.speak(hello)
         else:
-            self.robot_text = "Type a task in the Ask box, then press Enter."
-            self.log.appendleft("VOICE   Type in the Ask box")
+            self.robot_text = "Click once, then type a task in the Ask box."
+            self.log.appendleft("VOICE   Click once to unlock speaker")
+            self._web_hello_line = hello
         try:
             while self.running:
                 dt = self.clock.tick(C.FPS) / 1000.0
@@ -181,6 +184,8 @@ class App:
                     self._apply_data_tool()
                     self.robot_text = self.robot.caption or speak
                     self.voice.speak(self.robot_text)
+                    if self.voice.last_error:
+                        self.log.appendleft(f"VOICE   {self.voice.last_error}")
                     current = self.robot.current
                     self.robot.hold_speech = bool(
                         current and current.name in {"talk", "insights", "visualize", "load"}
@@ -221,8 +226,23 @@ class App:
             if sys.platform != "emscripten":
                 pygame.quit()
 
+    def _unlock_web_voice(self) -> None:
+        if sys.platform != "emscripten":
+            return
+        was_locked = not getattr(self.voice, "_web_unlocked", True)
+        self.voice.unlock_web_audio()
+        if was_locked and not self._web_hello:
+            self._web_hello = True
+            line = getattr(self, "_web_hello_line", "")
+            if line:
+                self.voice.speak(line)
+                self.robot_text = line
+                self.log.appendleft("VOICE   Speaker unlocked")
+
     def _events(self) -> None:
         for event in pygame.event.get():
+            if event.type in {pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN, pygame.TEXTINPUT}:
+                self._unlock_web_voice()
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.VIDEORESIZE and sys.platform != "emscripten":
