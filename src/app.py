@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import queue
 import re
 import sys
 from collections import deque
