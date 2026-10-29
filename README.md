@@ -4,7 +4,7 @@ Raja is a voice-to-action robot. You speak or type in plain English. An agent pi
 
 Voice → AI Agent → Python tools → robot action
 
-This repository is the desktop app. The public page is [voice-to-action-robot.vercel.app](https://voice-to-action-robot.vercel.app). The YouTube recording (`Robo Video5 fin.mp4`, 2:16) stays on the machine that recorded it because GitHub rejects files larger than 100 MB.
+This repository is the desktop app. The public page is [voice-to-action-robot.vercel.app](https://voice-to-action-robot.vercel.app).
 
 ## Run
 
@@ -48,7 +48,6 @@ A microphone is optional. Typed commands use the same path as speech. An API key
 - `src/music.py` — original jam
 - `src/ui.py` — stage and status panel
 - `data/retail_sales.csv` — the 12-month file used in the demo
-- `YOUTUBE.md` — long-video title and description
 - `site/` — the page deployed on Vercel
 
 ## Stack
