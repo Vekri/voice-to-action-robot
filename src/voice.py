@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import importlib
 import os
-import queue
 import sys
 import tempfile
-import threading
 import time
-from typing import Optional
+from collections import deque
+from typing import Deque, Optional
 
 from . import config as C
 
@@ -18,7 +17,9 @@ WEB = sys.platform == "emscripten"
 
 class VoiceIO:
     def __init__(self) -> None:
-        self.commands: "queue.Queue[str]" = queue.Queue()
+        # queue.Queue breaks under pygame-web / WASM. Use a deque everywhere.
+        self._commands: Deque[str] = deque()
+        self._speak_q: Deque[str] = deque()
         self.listening = False
         self.available = False
         self.tts_available = False
@@ -26,8 +27,6 @@ class VoiceIO:
         self.error = ""
         self.last_error = ""
         self.level = 0.0
-        self._stop = threading.Event()
-        self._speak_q: "queue.Queue[str]" = queue.Queue()
         self._recognizer = None
         self._mic = None
         self._sr = None
@@ -35,6 +34,9 @@ class VoiceIO:
         self._last_queued = ""
         self.deaf_until = 0.0
         self._speak_until = 0.0
+        self._stop = False
+        self._listen_thread = None
+        self._speak_thread = None
 
         if WEB:
             self.error = "Type in the Ask box"
@@ -42,8 +44,10 @@ class VoiceIO:
             return
 
         try:
-            sr = importlib.import_module("speech_recognition")
+            import queue
+            import threading
 
+            sr = importlib.import_module("speech_recognition")
             self._sr = sr
             self._recognizer = sr.Recognizer()
             self._recognizer.dynamic_energy_threshold = True
@@ -53,35 +57,47 @@ class VoiceIO:
             with self._mic as source:
                 self._recognizer.adjust_for_ambient_noise(source, duration=0.4)
             self.available = True
+            self._stop_event = threading.Event()
+            self._listen_thread = threading.Thread(target=self._listen_loop, daemon=True)
+            self._speak_thread = threading.Thread(target=self._speak_loop, daemon=True)
         except Exception as exc:
             self.error = f"Mic unavailable: {exc.__class__.__name__}"
             self.available = False
 
-        self._listen_thread = threading.Thread(target=self._listen_loop, daemon=True)
-        self._speak_thread = threading.Thread(target=self._speak_loop, daemon=True)
-
     def start(self) -> None:
         if WEB:
             return
-        self._stop.clear()
-        if not self._listen_thread.is_alive():
+        if getattr(self, "_stop_event", None) is not None:
+            self._stop_event.clear()
+        if self._listen_thread is not None and not self._listen_thread.is_alive():
+            import threading
+
             self._listen_thread = threading.Thread(target=self._listen_loop, daemon=True)
             self._listen_thread.start()
-        if not self._speak_thread.is_alive():
+        if self._speak_thread is not None and not self._speak_thread.is_alive():
+            import threading
+
             self._speak_thread = threading.Thread(target=self._speak_loop, daemon=True)
             self._speak_thread.start()
 
     def shutdown(self) -> None:
-        self._stop.set()
+        self._stop = True
+        if getattr(self, "_stop_event", None) is not None:
+            self._stop_event.set()
 
     def poll(self) -> None:
         if self._speak_until and time.time() >= self._speak_until:
             self.speaking = False
             self._speak_until = 0.0
 
+    def pop_command(self) -> Optional[str]:
+        if self._commands:
+            return self._commands.popleft()
+        return None
+
     @property
     def busy(self) -> bool:
-        return self.speaking or not self._speak_q.empty()
+        return self.speaking or bool(self._speak_q)
 
     def speak(self, text: str) -> None:
         line = (text or "").strip()
@@ -97,17 +113,22 @@ class VoiceIO:
             self._last_spoken = line
             self._speak_until = time.time() + min(12.0, max(1.4, 0.06 * len(line)))
             return
-        self._speak_q.put(line)
+        self._speak_q.append(line)
 
     def push_text(self, text: str) -> None:
         if text.strip():
-            self.commands.put(text.strip())
+            self._commands.append(text.strip())
+
+    def _stopped(self) -> bool:
+        if getattr(self, "_stop_event", None) is not None:
+            return self._stop_event.is_set()
+        return self._stop
 
     def _listen_loop(self) -> None:
         if not self.available or self._recognizer is None or self._mic is None:
             return
         sr = self._sr
-        while not self._stop.is_set():
+        while not self._stopped():
             if self.speaking or time.time() < self.deaf_until:
                 time.sleep(0.08)
                 continue
@@ -130,7 +151,7 @@ class VoiceIO:
                     except Exception:
                         text = ""
                 if text:
-                    self.commands.put(text)
+                    self._commands.append(text)
             except sr.WaitTimeoutError:
                 pass
             except Exception:
@@ -142,11 +163,11 @@ class VoiceIO:
 
     def _speak_loop(self) -> None:
         self._co_init()
-        while not self._stop.is_set():
-            try:
-                text = self._speak_q.get(timeout=0.05)
-            except queue.Empty:
+        while not self._stopped():
+            if not self._speak_q:
+                time.sleep(0.05)
                 continue
+            text = self._speak_q.popleft()
             self.speaking = True
             said = _speak_text(text)
             self.tts_available = said or self.tts_available

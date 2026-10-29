@@ -271,9 +271,8 @@ class App:
 
     def _ingest_voice(self) -> None:
         while True:
-            try:
-                uttered = self.voice.commands.get_nowait()
-            except queue.Empty:
+            uttered = self.voice.pop_command()
+            if not uttered:
                 return
             self._dispatch(uttered)
 
